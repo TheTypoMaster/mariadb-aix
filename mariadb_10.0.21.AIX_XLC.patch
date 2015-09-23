@@ -1,0 +1,429 @@
+diff -cur mariadb-10.0.21_ORIG/plugin/handler_socket/libhsclient/allocator.hpp mariadb-10.0.21_AIX/plugin/handler_socket/libhsclient/allocator.hpp
+--- mariadb-10.0.21_ORIG/plugin/handler_socket/libhsclient/allocator.hpp	2015-08-05 20:11:31.000000000 +0200
++++ mariadb-10.0.21_AIX/plugin/handler_socket/libhsclient/allocator.hpp	2015-09-21 13:22:23.000000000 +0200
+@@ -35,7 +35,7 @@
+  
+  #if 1
+  #define DENA_ALLOCA_ALLOCATE(typ, len) \
+- 	static_cast<typ *>(alloca((len) * sizeof(typ)))
++ 	static_cast<typ *>((void*)alloca((len) * sizeof(typ)))
+  #define DENA_ALLOCA_FREE(x)
+  #else
+  #define DENA_ALLOCA_ALLOCATE(typ, len) \
+diff -cur mariadb-10.0.21_ORIG/sql/CMakeLists.txt mariadb-10.0.21_AIX/sql/CMakeLists.txt
+--- mariadb-10.0.21_ORIG/sql/CMakeLists.txt	2015-08-05 20:11:31.000000000 +0200
++++ mariadb-10.0.21_AIX/sql/CMakeLists.txt	2015-09-21 14:07:20.000000000 +0200
+@@ -143,6 +143,10 @@
+    ${LIBWRAP} ${LIBCRYPT} ${LIBDL} ${CMAKE_THREAD_LIBS_INIT}
+    ${SSL_LIBRARIES})
+  
++ if(${CMAKE_SYSTEM_NAME} MATCHES AIX)
++ #SET(mysqld_link_flags ${mysqld_link_flags} -berok)
++ endif(${CMAKE_SYSTEM_NAME} MATCHES AIX)
++ 
+  IF(WIN32)
+    SET(MYSQLD_SOURCE main.cc nt_servc.cc nt_servc.h message.rc)
+    TARGET_LINK_LIBRARIES(sql psapi)
+diff -cur mariadb-10.0.21_ORIG/sql/main.cc mariadb-10.0.21_AIX/sql/main.cc
+--- mariadb-10.0.21_ORIG/sql/main.cc	2015-08-05 20:11:31.000000000 +0200
++++ mariadb-10.0.21_AIX/sql/main.cc	2015-09-18 10:26:02.000000000 +0200
+@@ -24,3 +24,4 @@
+  {
+    return mysqld_main(argc, argv);
+  }
++ 
+diff -cur mariadb-10.0.21_ORIG/storage/connect/CMakeLists.txt mariadb-10.0.21_AIX/storage/connect/CMakeLists.txt
+--- mariadb-10.0.21_ORIG/storage/connect/CMakeLists.txt	2015-08-05 20:11:31.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/CMakeLists.txt	2015-09-21 15:17:25.000000000 +0200
+@@ -46,18 +46,18 @@
+  #
+  IF(UNIX)
+    # Bar: -Wfatal-errors removed (does not present in gcc on solaris10)
+-   if(WITH_WARNINGS)
+-     add_definitions(-Wall -Wextra -Wmissing-declarations)
+-     message(STATUS "CONNECT: GCC: All warnings enabled")
+-   else()
+-     add_definitions(-Wall -Wmissing-declarations)
+-     add_definitions(-Wno-write-strings)
+-     add_definitions(-Wno-unused-variable)
++ #  if(WITH_WARNINGS)
++ #    add_definitions(-Wall -Wextra -Wmissing-declarations)
++ #    message(STATUS "CONNECT: GCC: All warnings enabled")
++ #  else()
++ #    add_definitions(-Wall -Wmissing-declarations)
++ #    add_definitions(-Wno-write-strings)
++ #    add_definitions(-Wno-unused-variable)
+      # Bar: -Wno-unused-but-set-variables commented (does not present on sol10)
+      # add_definitions(-Wno-unused-but-set-variable)
+-     add_definitions(-Wno-unused-value)
+-     add_definitions(-Wno-unused-function)
+-     add_definitions(-Wno-parentheses)
++ #    add_definitions(-Wno-unused-value)
++ #    add_definitions(-Wno-unused-function)
++ #    add_definitions(-Wno-parentheses)
+      #add_definitions(-Wno-missing-declarations)
+      # Bar: -Wno-int-to-pointer-cast commended (does not present in gcc on sol10)
+      # add_definitions(-Wno-int-to-pointer-cast)
+@@ -69,12 +69,12 @@
+  # These switches are for C++ only
+  #   add_definitions(-Wno-reorder)
+  
+-     message(STATUS "CONNECT: GCC: Some warnings disabled")
+-   endif(WITH_WARNINGS)
++ #    message(STATUS "CONNECT: GCC: Some warnings disabled")
++ #  endif(WITH_WARNINGS)
+  
+-   add_definitions( -DUNIX -DLINUX -DUBUNTU )
++ #  add_definitions( -DUNIX -DLINUX -DUBUNTU )
+  
+-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fexceptions -fPIC ")
++ #  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fexceptions -fPIC ")
+    get_property(inc_dirs DIRECTORY PROPERTY INCLUDE_DIRECTORIES)
+    SET(CONNECT_SOURCES ${CONNECT_SOURCES} inihandl.c)
+    SET(IPHLPAPI_LIBRARY "")
+diff -cur mariadb-10.0.21_ORIG/storage/connect/filamap.cpp mariadb-10.0.21_AIX/storage/connect/filamap.cpp
+--- mariadb-10.0.21_ORIG/storage/connect/filamap.cpp	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/filamap.cpp	2015-09-21 15:54:43.000000000 +0200
+@@ -23,7 +23,7 @@
+  #endif   // __BORLANDC__
+  //#include <windows.h>
+  #else    // !__WIN__
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+  #include <errno.h>
+  #include <unistd.h>
+  #else    // !UNIX
+diff -cur mariadb-10.0.21_ORIG/storage/connect/filamfix.cpp mariadb-10.0.21_AIX/storage/connect/filamfix.cpp
+--- mariadb-10.0.21_ORIG/storage/connect/filamfix.cpp	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/filamfix.cpp	2015-09-21 15:58:42.000000000 +0200
+@@ -26,7 +26,7 @@
+  #endif   // __BORLANDC__
+  //#include <windows.h>
+  #else   // !__WIN__
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+  #include <errno.h>
+  #include <unistd.h>
+  #else   // !UNIX
+@@ -524,7 +524,7 @@
+        /*****************************************************************/
+        /*  Remove extra records.                                        */
+        /*****************************************************************/
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+        if (ftruncate(h, (off_t)(Tpos * Lrecl))) {
+          sprintf(g->Message, MSG(TRUNCATE_ERROR), strerror(errno));
+          close(h);
+diff -cur mariadb-10.0.21_ORIG/storage/connect/filamtxt.cpp mariadb-10.0.21_AIX/storage/connect/filamtxt.cpp
+--- mariadb-10.0.21_ORIG/storage/connect/filamtxt.cpp	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/filamtxt.cpp	2015-09-21 16:00:29.000000000 +0200
+@@ -26,7 +26,7 @@
+  #endif   // __BORLANDC__
+  //#include <windows.h>
+  #else   // !__WIN__
+- #if defined(UNIX) || defined(UNIV_LINUX)
++ #if defined(UNIX) || defined(UNIV_LINUX) || defined(_AIX)
+  #include <errno.h>
+  #include <unistd.h>
+  //#if !defined(sun)                      // Sun has the ftruncate fnc.
+@@ -49,7 +49,7 @@
+  #include "filamtxt.h"
+  #include "tabdos.h"
+  
+- #if defined(UNIX) || defined(UNIV_LINUX)
++ #if defined(UNIX) || defined(UNIV_LINUX) || defined(_AIX)
+  #include "osutil.h"
+  #define _fileno fileno
+  #define _O_RDONLY O_RDONLY
+diff -cur mariadb-10.0.21_ORIG/storage/connect/filamvct.cpp mariadb-10.0.21_AIX/storage/connect/filamvct.cpp
+--- mariadb-10.0.21_ORIG/storage/connect/filamvct.cpp	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/filamvct.cpp	2015-09-21 16:02:53.000000000 +0200
+@@ -30,7 +30,7 @@
+  //#include <windows.h>
+  #include <sys/stat.h>
+  #else   // !__WIN__
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <unistd.h>
+@@ -838,7 +838,7 @@
+          /***************************************************************/
+          /*  Remove extra blocks.                                       */
+          /***************************************************************/
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+          if (ftruncate(h, (off_t)(Headlen + Block * Blksize))) {
+            sprintf(g->Message, MSG(TRUNCATE_ERROR), strerror(errno));
+            close(h);
+@@ -2276,7 +2276,7 @@
+          /***************************************************************/
+          /*  Remove extra records.                                      */
+          /***************************************************************/
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+          if (ftruncate(h, (off_t)(Tpos * Clens[i]))) {
+            sprintf(g->Message, MSG(TRUNCATE_ERROR), strerror(errno));
+            close(h);
+diff -cur mariadb-10.0.21_ORIG/storage/connect/fmdlex.c mariadb-10.0.21_AIX/storage/connect/fmdlex.c
+--- mariadb-10.0.21_ORIG/storage/connect/fmdlex.c	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/fmdlex.c	2015-09-21 15:50:06.000000000 +0200
+@@ -59,6 +59,7 @@
+  #endif  /* __STDC__ */
+  #endif  /* ! __cplusplus */
+  
++ #define YY_USE_PROTOS
+  
+  #ifdef __TURBOC__
+  #define YY_USE_CONST
+@@ -386,7 +387,7 @@
+  #define yymore() yymore_used_but_not_detected
+  #define YY_MORE_ADJ 0
+  char *yytext;
+- #if defined(UNIX)
++ #if defined(UNIX) || defined(_AIX)
+  #define _fileno fileno
+  #define istty _istty
+  #else
+diff -cur mariadb-10.0.21_ORIG/storage/connect/osutil.h mariadb-10.0.21_AIX/storage/connect/osutil.h
+--- mariadb-10.0.21_ORIG/storage/connect/osutil.h	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/osutil.h	2015-09-21 15:48:56.000000000 +0200
+@@ -1,7 +1,7 @@
+  #ifndef __OSUTIL_H__
+  #define __OSUTIL_H__
+  
+- #if defined(UNIX) || defined(UNIV_LINUX)
++ #if defined(UNIX) || defined(UNIV_LINUX) || defined(_AIX)
+  #include "my_global.h"
+  #include <errno.h>
+  #include <stddef.h>
+diff -cur mariadb-10.0.21_ORIG/storage/connect/plugutil.c mariadb-10.0.21_AIX/storage/connect/plugutil.c
+--- mariadb-10.0.21_ORIG/storage/connect/plugutil.c	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/plugutil.c	2015-09-21 15:53:53.000000000 +0200
+@@ -47,7 +47,7 @@
+  #if defined(__WIN__)
+  //#include <windows.h>
+  #else
+- #if defined(UNIX) || defined(UNIV_LINUX)
++ #if defined(UNIX) || defined(UNIV_LINUX) || defined(_AIX)
+  #include <errno.h>
+  #include <unistd.h>
+  //#define __stdcall
+@@ -61,7 +61,7 @@
+  #include <alloc.h>
+  #endif
+  #include <errno.h>                  /* definitions of ERANGE ENOMEM    */
+- #if !defined(UNIX) && !defined(UNIV_LINUX)
++ #if !defined(UNIX) && !defined(UNIV_LINUX) && !defined(_AIX)
+  #include <direct.h>                 /* Directory management library    */
+  #endif
+  
+diff -cur mariadb-10.0.21_ORIG/storage/connect/reldef.cpp mariadb-10.0.21_AIX/storage/connect/reldef.cpp
+--- mariadb-10.0.21_ORIG/storage/connect/reldef.cpp	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/connect/reldef.cpp	2015-09-22 14:24:29.000000000 +0200
+@@ -13,6 +13,9 @@
+  /*                                                                     */
+  /***********************************************************************/
+  
++ /* this is to implement the missing dladdr() in AIX */
++ #include "sys/ldr.h"
++ 
+  /***********************************************************************/
+  /*  Include relevant MariaDB header file.                              */
+  /***********************************************************************/
+@@ -52,6 +55,43 @@
+  extern handlerton *connect_hton;
+  #endif   // !__WIN__
+  
++ /* aix dladdr equiv */
++ 
++ #if defined (_AIX)
++ struct Dl_info {
++   const char* dli_fname;
++ };
++ int dladdr(void* s, Dl_info* i) {
++    static const size_t bufSize = 4096;
++    void* buf = malloc(bufSize);
++    char* pldi = (char*)buf;
++    int r = loadquery(L_GETINFO,  pldi,  bufSize);
++    if (r == -1) {
++       i->dli_fname = 0;
++       free(buf);
++       return 0;
++    }
++    // First is main(), skip.
++    ld_info* ldi = (ld_info*)pldi;
++    while (ldi->ldinfo_next) {
++      pldi += ldi->ldinfo_next;
++      ldi = (ld_info*)pldi;
++      char* textBegin = (char*)ldi->ldinfo_textorg;
++      if (textBegin < s) {
++         char* textEnd = textBegin + ldi->ldinfo_textsize;
++         if (textEnd > s) {
++            i->dli_fname = ldi->ldinfo_filename;
++            free(buf);
++            return 1;
++         }
++      }
++    }
++    i->dli_fname = 0;
++    free(buf);
++    return 0;
++ }
++ #endif
++ 
+  /***********************************************************************/
+  /*  External function.                                                 */
+  /***********************************************************************/
+@@ -510,7 +550,10 @@
+      } // endif getdef
+  #else   // !__WIN__
+    const char *error = NULL;
+-   Dl_info dl_info;
++ 
++ 
++ /* this shit does not work in aix 
++ Dl_info dl_info;
+      
+  #if 0  // Don't know what all this stuff does
+    // The OEM lib must retrieve exported CONNECT variables
+@@ -527,9 +570,12 @@
+      return NULL;
+    } // endif dladdr
+  #endif // 0
++ */
+  
+    // Is the library already loaded?
++ #if !defined (_AIX)
+    if (!Hdll && !(Hdll = dlopen(soname, RTLD_NOLOAD)))
++ #endif
+      // Load the desired shared library
+      if (!(Hdll = dlopen(soname, RTLD_LAZY))) {
+        error = dlerror();
+diff -cur mariadb-10.0.21_ORIG/storage/innobase/handler/ha_innodb.cc mariadb-10.0.21_AIX/storage/innobase/handler/ha_innodb.cc
+--- mariadb-10.0.21_ORIG/storage/innobase/handler/ha_innodb.cc	2015-08-05 20:11:32.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/innobase/handler/ha_innodb.cc	2015-09-21 15:04:02.000000000 +0200
+@@ -33,6 +33,7 @@
+  
+  *****************************************************************************/
+  
++ 
+  #include <sql_table.h>	// explain_filename, nz2, EXPLAIN_PARTITIONS_AS_COMMENT,
+  			// EXPLAIN_FILENAME_MAX_EXTRA_LENGTH
+  
+@@ -5735,7 +5736,7 @@
+  }
+  /******************************************************************//**
+  Get the first character's code position for FTS index partition. */
+- UNIV_INTERN
++ UNIV_INTERN 
+  ulint
+  innobase_strnxfrm(
+  /*==============*/
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/handler/ha_innodb.cc mariadb-10.0.21_AIX/storage/xtradb/handler/ha_innodb.cc
+--- mariadb-10.0.21_ORIG/storage/xtradb/handler/ha_innodb.cc	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/handler/ha_innodb.cc	2015-09-18 10:31:03.000000000 +0200
+@@ -17133,7 +17133,7 @@
+  }
+  
+  static SHOW_VAR innodb_status_variables_export[]= {
+- 	{"Innodb", (char*) &show_innodb_vars, SHOW_FUNC},
++ 	{"Innodb", (char*)(void*) &show_innodb_vars, SHOW_FUNC},
+  	{NullS, NullS, SHOW_LONG}
+  };
+  
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/include/api0api.h mariadb-10.0.21_AIX/storage/xtradb/include/api0api.h
+--- mariadb-10.0.21_ORIG/storage/xtradb/include/api0api.h	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/include/api0api.h	2015-09-21 15:00:49.000000000 +0200
+@@ -650,7 +650,7 @@
+  /*****************************************************************//**
+  Insert a row to a table.
+  @return	DB_SUCCESS or err code */
+- 
++ extern "C"
+  ib_err_t
+  ib_cursor_insert_row(
+  /*=================*/
+@@ -660,7 +660,7 @@
+  /*****************************************************************//**
+  Update a row in a table.
+  @return	DB_SUCCESS or err code */
+- 
++ extern "C"
+  ib_err_t
+  ib_cursor_update_row(
+  /*=================*/
+@@ -907,7 +907,7 @@
+  Copy the contents of  source tuple to destination tuple. The tuples
+  must be of the same type and belong to the same table/index.
+  @return	DB_SUCCESS or error code */
+- 
++ extern "C"
+  ib_err_t
+  ib_tuple_copy(
+  /*==========*/
+@@ -953,7 +953,7 @@
+  /*****************************************************************//**
+  Return the number of user columns in the tuple definition.
+  @return	number of user columns */
+- 
++ extern "C"
+  ib_ulint_t
+  ib_tuple_get_n_user_cols(
+  /*=====================*/
+@@ -962,7 +962,7 @@
+  /*****************************************************************//**
+  Return the number of columns in the tuple definition.
+  @return	number of columns */
+- 
++ extern "C"
+  ib_ulint_t
+  ib_tuple_get_n_cols(
+  /*================*/
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/include/fts0types.ic mariadb-10.0.21_AIX/storage/xtradb/include/fts0types.ic
+--- mariadb-10.0.21_ORIG/storage/xtradb/include/fts0types.ic	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/include/fts0types.ic	2015-09-21 14:48:32.000000000 +0200
+@@ -282,7 +282,7 @@
+  
+  /******************************************************************//**
+  Get the first character's code position for FTS index partition */
+- extern
++ extern "C"
+  ulint
+  innobase_strnxfrm(
+  /*==============*/
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/include/trx0sys.h mariadb-10.0.21_AIX/storage/xtradb/include/trx0sys.h
+--- mariadb-10.0.21_ORIG/storage/xtradb/include/trx0sys.h	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/include/trx0sys.h	2015-09-21 14:52:27.000000000 +0200
+@@ -359,6 +359,7 @@
+  /*****************************************************************//**
+  Get the name representation of the file format from its id.
+  @return	pointer to the name */
++ extern "C"
+  UNIV_INTERN
+  const char*
+  trx_sys_file_format_id_to_name(
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/log/log0log.cc mariadb-10.0.21_AIX/storage/xtradb/log/log0log.cc
+--- mariadb-10.0.21_ORIG/storage/xtradb/log/log0log.cc	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/log/log0log.cc	2015-09-02 08:50:50.000000000 +0200
+@@ -256,7 +256,7 @@
+  {
+  	ulint	move_start;
+  	ulint	move_end;
+- 	byte*	tmp_buf = static_cast<byte *>(alloca(OS_FILE_LOG_BLOCK_SIZE));
++ 	byte*	tmp_buf = reinterpret_cast<byte *>(alloca(OS_FILE_LOG_BLOCK_SIZE));
+  
+  	mutex_enter(&(log_sys->mutex));
+  
+diff -cur mariadb-10.0.21_ORIG/storage/xtradb/log/log0recv.cc mariadb-10.0.21_AIX/storage/xtradb/log/log0recv.cc
+--- mariadb-10.0.21_ORIG/storage/xtradb/log/log0recv.cc	2015-08-05 20:11:36.000000000 +0200
++++ mariadb-10.0.21_AIX/storage/xtradb/log/log0recv.cc	2015-09-02 08:53:28.000000000 +0200
+@@ -3097,7 +3097,7 @@
+  #endif /* UNIV_LOG_ARCHIVE */
+  	byte*		buf;
+  	byte*		log_hdr_buf;
+- 	byte*		log_hdr_buf_base = static_cast<byte *>
++ 	byte*		log_hdr_buf_base = reinterpret_cast<byte *>
+  		(alloca(LOG_FILE_HDR_SIZE + OS_FILE_LOG_BLOCK_SIZE));
+  	dberr_t		err;
+  	ut_when_dtor<recv_dblwr_t> tmp(recv_sys->dblwr);

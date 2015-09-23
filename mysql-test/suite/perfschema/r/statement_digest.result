@@ -1,0 +1,161 @@
+####################################
+# SETUP
+####################################
+CREATE DATABASE statements_digest;
+USE statements_digest;
+CREATE TABLE t1(a int);
+CREATE TABLE t2(a int);
+CREATE TABLE t3(a int, b int);
+CREATE TABLE t4(a int, b int);
+CREATE TABLE t5(a int, b int, c int);
+CREATE TABLE t6(a int, b int, c int, d int);
+CREATE TABLE t11 (c CHAR(4));
+CREATE TABLE t12 (c CHAR(4));
+TRUNCATE TABLE performance_schema.events_statements_summary_by_digest;
+####################################
+# EXECUTION
+####################################
+SELECT 1 FROM t1;
+1
+SELECT 1 FROM `t1`;
+1
+SELECT 1,2 FROM t1;
+1	2
+SELECT 1, 2, 3, 4 FROM t1;
+1	2	3	4
+SELECT 1 FROM t2;
+1
+SELECT 1,2 FROM t2;
+1	2
+SELECT 1, 2, 3, 4 FROM t2;
+1	2	3	4
+INSERT INTO t1 VALUES (1);
+INSERT INTO t2 VALUES (1);
+INSERT INTO t3 VALUES (1, 2);
+INSERT INTO t4 VALUES (1, 2);
+INSERT INTO t5 VALUES (1, 2, 3);
+INSERT INTO t1 VALUES (1), (2), (3);
+INSERT INTO t1 VALUES (1), (2), (3), (4);
+INSERT INTO t3 VALUES (1, 2), (3, 4), (5, 6);
+INSERT INTO t5 VALUES (1, 2, 3), (4, 5, 6), (7, 8, 9);
+INSERT INTO t1 VALUES (NULL);
+INSERT INTO t3 VALUES (NULL,NULL);
+INSERT INTO t3 VALUES (1,NULL);
+INSERT INTO t3 VALUES (NULL,1);
+INSERT INTO t6 VALUES (NULL, NULL, NULL, NULL);
+INSERT INTO t6 VALUES (1, NULL, NULL, NULL);
+INSERT INTO t6 VALUES (NULL, 2, NULL, NULL);
+INSERT INTO t6 VALUES (1, 2, 3, NULL);
+INSERT INTO t6 VALUES (1, 2, NULL, 4);
+SELECT                                          1           +        1;
+1           +        1
+2
+SELECT 1;
+1
+1
+SELECT 1 /* This is an inline comment */ + 1;
+1 /* This is an inline comment */ + 1
+2
+SELECT 1+
+/*
+this is a
+multiple-line comment
+*/
+1;
+1+
+/*
+this is a
+multiple-line comment
+*/
+1
+2
+CREATE SCHEMA statements_digest_temp;
+DROP SCHEMA statements_digest_temp;
+CREATE DATABASE statements_digest_temp;
+DROP DATABASE statements_digest_temp;
+SELECT 1 FROM no_such_table;
+ERROR 42S02: Table 'statements_digest.no_such_table' doesn't exist
+CREATE TABLE dup_table (c char(4));
+CREATE TABLE dup_table (c char(4));
+ERROR 42S01: Table 'dup_table' already exists
+DROP TABLE dup_table;
+INSERT INTO t11 VALUES("MySQL");
+Warnings:
+Warning	1265	Data truncated for column 'c' at row 1
+PREPARE stmt FROM "SELECT * FROM t12";
+EXECUTE stmt;
+c
+EXECUTE stmt;
+c
+DEALLOCATE PREPARE stmt;
+CREATE PROCEDURE p1() BEGIN SELECT * FROM t12; END//
+CALL p1();
+c
+CALL p1();
+c
+DROP PROCEDURE p1;
+CREATE FUNCTION `func`(a INT, b INT) RETURNS int(11) RETURN a+b //
+select func(3,4);
+func(3,4)
+7
+select func(13,42);
+func(13,42)
+55
+DROP FUNCTION func;
+CREATE TRIGGER trg BEFORE INSERT ON t12 FOR EACH ROW SET @a:=1;
+INSERT INTO t12 VALUES ("abc");
+INSERT INTO t12 VALUES ("def");
+DROP TRIGGER trg;
+####################################
+# QUERYING PS STATEMENT DIGEST
+####################################
+SELECT SCHEMA_NAME, DIGEST, DIGEST_TEXT, COUNT_STAR, SUM_ROWS_AFFECTED, SUM_WARNINGS,
+SUM_ERRORS FROM performance_schema.events_statements_summary_by_digest;
+SCHEMA_NAME	DIGEST	DIGEST_TEXT	COUNT_STAR	SUM_ROWS_AFFECTED	SUM_WARNINGS	SUM_ERRORS
+statements_digest	b12e7d0f2ac88c8fad9ac8dabb347b09	TRUNCATE TABLE `performance_schema` . `events_statements_summary_by_digest` 	1	0	0	0
+statements_digest	390f3ff3444c4de44fcbd052b11caf4e	SELECT ? FROM `t1` 	2	0	0	0
+statements_digest	8726524372f6e4924bbe1393b772498e	SELECT ?, ... FROM `t1` 	2	0	0	0
+statements_digest	5b06fb13fa9af5e8a4ec26bac8f994cd	SELECT ? FROM `t2` 	1	0	0	0
+statements_digest	82201946968b4baca616292f96e933a7	SELECT ?, ... FROM `t2` 	2	0	0	0
+statements_digest	35d365779571257e8837f01b39dd9df5	INSERT INTO `t1` VALUES (?) 	2	2	0	0
+statements_digest	eaaf6c26e98130ec21cfae1389e3eb94	INSERT INTO `t2` VALUES (?) 	1	1	0	0
+statements_digest	28f3cfdcfffeff3219bdd255ed15e6ac	INSERT INTO `t3` VALUES (...) 	4	4	0	0
+statements_digest	166a9591b81371a6ea389f27cfc1e5fd	INSERT INTO `t4` VALUES (...) 	1	1	0	0
+statements_digest	fb25b9f9146120fb72c3c732e79dcc82	INSERT INTO `t5` VALUES (...) 	1	1	0	0
+statements_digest	58bb7798d974224ff08742502eed1aae	INSERT INTO `t1` VALUES (?) /* , ... */ 	2	7	0	0
+statements_digest	3352b44dcaf21f59141ea76b5cace5c0	INSERT INTO `t3` VALUES (...) /* , ... */ 	1	3	0	0
+statements_digest	1905c012e5d6a3a12e39b0b3ce13b22a	INSERT INTO `t5` VALUES (...) /* , ... */ 	1	3	0	0
+statements_digest	981d682c1e63b437c33230eb558d0f64	INSERT INTO `t6` VALUES (...) 	5	5	0	0
+statements_digest	aeb185ab9b6e9d5a49e47c8741b8acdf	SELECT ? + ? 	3	0	0	0
+statements_digest	d3804664eeee11407f3fcbd5c29a1f73	SELECT ? 	1	0	0	0
+statements_digest	6382c1dfc79755af2dd46113acea142b	CREATE SCHEMA `statements_digest_temp` 	2	2	0	0
+statements_digest	256f8dfc97d90a79103ebd6616b8d7aa	DROP SCHEMA `statements_digest_temp` 	2	0	0	0
+statements_digest	5315d33e7ef87b104b73912d484af6a3	SELECT ? FROM `no_such_table` 	1	0	0	1
+statements_digest	dcde8f720a419aa5d52246207268cf6c	CREATE TABLE `dup_table` ( `c` CHARACTER (?) ) 	2	0	0	1
+statements_digest	b4b4abab3f030642444fb32c44f28058	DROP TABLE `dup_table` 	1	0	0	0
+statements_digest	a34ed519fdeb4fe4460038db92ea0c20	INSERT INTO `t11` VALUES (?) 	1	1	1	0
+statements_digest	d3eda26b379bd56340ce84fe395dfff7	SHOW WARNINGS 	1	0	0	0
+statements_digest	e6aa634cf5a630087fefe9868b018329	PREPARE `stmt` FROM ? 	1	0	0	0
+statements_digest	4de34527c0dfef6ad8387d4359f78c78	EXECUTE `stmt` 	2	0	0	0
+statements_digest	54592849b6cf7386568c88e7fb20f61e	DEALLOCATE PREPARE `stmt` 	1	0	0	0
+statements_digest	ee90db91a06cedfbcccf80f951dc58cd	CREATE PROCEDURE `p1` ( ) BEGIN SELECT * FROM `t12` ; END 	1	0	0	0
+statements_digest	f964655a0037d2f194030bd024eab748	CALL `p1` ( ) 	2	0	0	0
+statements_digest	788d8223f67ba10d1b97fcaa42fec081	DROP PROCEDURE `p1` 	1	0	0	0
+statements_digest	5146273ef7d98ee1954d23fd98a35d68	CREATE FUNCTION `func` ( `a` INTEGER , `b` INTEGER ) RETURNS INTEGER (?) RETURN `a` + `b` 	1	0	0	0
+statements_digest	2c9b8e1e7f2ad3ca3c49abb2ea30e871	SELECT `func` (...) 	2	0	0	0
+statements_digest	f48e30910f8e7758b818c088916424cd	DROP FUNCTION `func` 	1	0	0	0
+statements_digest	53ccf1d241eeb749f1e1b7becc65006f	CREATE TRIGGER `trg` BEFORE INSERT ON `t12` FOR EACH ROW SET @? := ? 	1	0	0	0
+statements_digest	a9722a0717a57275431575c7204d71c1	INSERT INTO `t12` VALUES (?) 	2	2	0	0
+statements_digest	2d48809e6899f63ec304776466a63eef	DROP TRIGGER `trg` 	1	0	0	0
+####################################
+# CLEANUP
+####################################
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+DROP TABLE IF EXISTS t3;
+DROP TABLE IF EXISTS t4;
+DROP TABLE IF EXISTS t5;
+DROP TABLE IF EXISTS t6;
+DROP TABLE IF EXISTS t11;
+DROP TABLE IF EXISTS t12;
+DROP DATABASE IF EXISTS statements_digest;

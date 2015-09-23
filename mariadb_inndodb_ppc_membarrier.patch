@@ -1,0 +1,330 @@
+=== modified file 'storage/innobase/CMakeLists.txt'
+Index: mysql-5.7.4-m14/storage/innobase/CMakeLists.txt
+===================================================================
+--- mysql-5.7.4-m14.orig/storage/innobase/CMakeLists.txt
++++ mysql-5.7.4-m14/storage/innobase/CMakeLists.txt
+@@ -138,6 +138,37 @@ SET(INNOBASE_SOURCES
+ 	ut/ut0vec.cc
+ 	ut/ut0wqueue.cc)
+ 
++		
++IF(NOT CMAKE_CROSSCOMPILING)
++  CHECK_C_SOURCE_RUNS(
++  "#include<stdint.h>
++  int main()
++  {
++    __sync_synchronize();
++    return(0);
++  }"
++  HAVE_IB_GCC_SYNC_SYNCHRONISE
++  )
++  CHECK_C_SOURCE_RUNS(
++  "#include<stdint.h>
++  int main()
++  {
++    __atomic_thread_fence(__ATOMIC_ACQUIRE);
++    __atomic_thread_fence(__ATOMIC_RELEASE);
++    return(0);
++  }"
++  HAVE_IB_GCC_ATOMIC_THREAD_FENCE
++  )
++ENDIF()
++
++IF(HAVE_IB_GCC_SYNC_SYNCHRONISE)
++ ADD_DEFINITIONS(-DHAVE_IB_GCC_SYNC_SYNCHRONISE=1)
++ENDIF()
++
++IF(HAVE_IB_GCC_ATOMIC_THREAD_FENCE)
++ ADD_DEFINITIONS(-DHAVE_IB_GCC_ATOMIC_THREAD_FENCE=1)
++ENDIF()
++
+ IF(WITH_INNODB)
+   # Legacy option
+   SET(WITH_INNOBASE_STORAGE_ENGINE TRUE)
+Index: mysql-5.7.4-m14/storage/innobase/include/sync0rw.ic
+===================================================================
+--- mysql-5.7.4-m14.orig/storage/innobase/include/sync0rw.ic
++++ mysql-5.7.4-m14/storage/innobase/include/sync0rw.ic
+@@ -95,6 +95,7 @@ rw_lock_set_waiter_flag(
+ 	(void) os_compare_and_swap_ulint(&lock->waiters, 0, 1);
+ #else /* INNODB_RW_LOCKS_USE_ATOMICS */
+ 	lock->waiters = 1;
++	os_wmb;
+ #endif /* INNODB_RW_LOCKS_USE_ATOMICS */
+ }
+ 
+@@ -112,6 +113,7 @@ rw_lock_reset_waiter_flag(
+ 	(void) os_compare_and_swap_ulint(&lock->waiters, 1, 0);
+ #else /* INNODB_RW_LOCKS_USE_ATOMICS */
+ 	lock->waiters = 0;
++	os_wmb;
+ #endif /* INNODB_RW_LOCKS_USE_ATOMICS */
+ }
+ 
+@@ -125,7 +127,10 @@ rw_lock_get_writer(
+ /*===============*/
+ 	const rw_lock_t*	lock)	/*!< in: rw-lock */
+ {
+-	lint lock_word = lock->lock_word;
++	lint lock_word;
++
++	os_rmb;
++	lock_word = lock->lock_word;
+ 
+ 	ut_ad(lock_word <= X_LOCK_DECR);
+ 	if (lock_word > X_LOCK_HALF_DECR) {
+@@ -157,7 +162,10 @@ rw_lock_get_reader_count(
+ /*=====================*/
+ 	const rw_lock_t*	lock)	/*!< in: rw-lock */
+ {
+-	lint lock_word = lock->lock_word;
++	lint lock_word;
++
++	os_rmb;
++	lock_word = lock->lock_word;
+ 	ut_ad(lock_word <= X_LOCK_DECR);
+ 
+ 	if (lock_word > X_LOCK_HALF_DECR) {
+@@ -204,7 +212,10 @@ rw_lock_get_x_lock_count(
+ /*=====================*/
+ 	const rw_lock_t*	lock)	/*!< in: rw-lock */
+ {
+-	lint lock_copy = lock->lock_word;
++	lint lock_copy;
++
++	os_rmb;
++	lock_copy = lock->lock_word;
+ 	ut_ad(lock_copy <= X_LOCK_DECR);
+ 
+ 	if (lock_copy == 0 || lock_copy == -X_LOCK_HALF_DECR) {
+@@ -237,7 +248,10 @@ rw_lock_get_sx_lock_count(
+ 	const rw_lock_t*	lock)	/*!< in: rw-lock */
+ {
+ #ifdef UNIV_DEBUG
+-	lint lock_copy = lock->lock_word;
++	lint lock_copy;
++
++	os_rmb;
++	lock_copy = lock->lock_word;
+ 
+ 	ut_ad(lock_copy <= X_LOCK_DECR);
+ 
+@@ -272,13 +286,16 @@ rw_lock_lock_word_decr(
+ 	lint		threshold)	/*!< in: threshold of judgement */
+ {
+ #ifdef INNODB_RW_LOCKS_USE_ATOMICS
+-	lint local_lock_word = lock->lock_word;
++	lint local_lock_word;
++	os_rmb;
++	local_lock_word = lock->lock_word;
+ 	while (local_lock_word > threshold) {
+ 		if (os_compare_and_swap_lint(&lock->lock_word,
+ 					     local_lock_word,
+ 					     local_lock_word - amount)) {
+ 			return(true);
+ 		}
++		os_rmb;
+ 		local_lock_word = lock->lock_word;
+ 	}
+ 	return(false);
+@@ -473,6 +490,7 @@ rw_lock_x_lock_func_nowait(
+ 		/* Relock: this lock_word modification is safe since no other
+ 		threads can modify (lock, unlock, or reserve) lock_word while
+ 		there is an exclusive writer and this is the writer thread. */
++		os_rmb;
+ 		if (lock->lock_word == 0 || lock->lock_word == -X_LOCK_HALF_DECR) {
+ 			/* There are 1 x-locks */
+ 			lock->lock_word -= X_LOCK_DECR;
+@@ -484,7 +502,7 @@ rw_lock_x_lock_func_nowait(
+ 
+ 		/* Watch for too many recursive locks */
+ 		ut_ad(lock->lock_word < 0);
+-
++		os_wmb;
+ 	} else {
+ 		/* Failure */
+ 		return(FALSE);
+@@ -513,6 +531,7 @@ rw_lock_s_unlock_func(
+ #endif
+ 	rw_lock_t*	lock)	/*!< in/out: rw-lock */
+ {
++	os_rmb;
+ 	ut_ad(lock->lock_word > -X_LOCK_DECR);
+ 	ut_ad(lock->lock_word != 0);
+ 	ut_ad(lock->lock_word < X_LOCK_DECR);
+@@ -552,6 +571,7 @@ rw_lock_x_unlock_func(
+ #endif /* UNIV_SYNC_DEBUG */
+ 	rw_lock_t*	lock)	/*!< in/out: rw-lock */
+ {
++	os_rmb;
+ 	ut_ad(lock->lock_word == 0 || lock->lock_word == -X_LOCK_HALF_DECR
+ 	      || lock->lock_word <= -X_LOCK_DECR);
+ 
+@@ -627,6 +647,7 @@ rw_lock_sx_unlock_func(
+ 
+ 	if (lock->sx_recursive == 0) {
+ 		/* Last caller in a possible recursive chain. */
++		os_rmb;
+ 		if (lock->lock_word > 0) {
+ 			lock->recursive = FALSE;
+ 			UNIV_MEM_INVALID(&lock->writer_thread,
+@@ -651,6 +672,7 @@ rw_lock_sx_unlock_func(
+ 			      || lock->lock_word <= -(X_LOCK_DECR
+ 						      + X_LOCK_HALF_DECR));
+ 			lock->lock_word += X_LOCK_HALF_DECR;
++			os_wmb;
+ 		}
+ 	}
+ 
+Index: mysql-5.7.4-m14/storage/innobase/srv/srv0start.cc
+===================================================================
+--- mysql-5.7.4-m14.orig/storage/innobase/srv/srv0start.cc
++++ mysql-5.7.4-m14/storage/innobase/srv/srv0start.cc
+@@ -1249,6 +1249,18 @@ innobase_start_or_create_for_mysql(void)
+ 		"" MUTEX_TYPE"");
+ 
+ 	ib_logf(IB_LOG_LEVEL_INFO,
++		"" IB_MEMORY_BARRIER_STARTUP_MSG "");
++
++#ifndef HAVE_MEMORY_BARRIER
++#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
++#else
++	ib_logf(IB_LOG_LEVEL_WARN,
++		"Built without memory barrier might cause problem"
++		" for this architecture.");
++#endif /* IA32 or AMD64 */
++#endif /* HAVE_MEMORY_BARRIER */
++
++	ib_logf(IB_LOG_LEVEL_INFO,
+ 		"Compressed tables use zlib " ZLIB_VERSION
+ #ifdef UNIV_ZIP_DEBUG
+ 	      " with validation"
+Index: mysql-5.7.4-m14/storage/innobase/sync/sync0arr.cc
+===================================================================
+--- mysql-5.7.4-m14.orig/storage/innobase/sync/sync0arr.cc
++++ mysql-5.7.4-m14/storage/innobase/sync/sync0arr.cc
+@@ -880,6 +880,7 @@ sync_arr_cell_can_wake_up(
+ 	case RW_LOCK_SX:
+ 		lock = cell->latch.lock;
+ 
++		os_rmb;
+ 		if (lock->lock_word > X_LOCK_HALF_DECR) {
+ 		/* Either unlocked or only read locked. */
+ 
+@@ -893,6 +894,7 @@ sync_arr_cell_can_wake_up(
+ 		lock = cell->latch.lock;
+ 
+                 /* lock_word == 0 means all readers or sx have left */
++		os_rmb;
+ 		if (lock->lock_word == 0) {
+ 
+ 			return(true);
+@@ -904,6 +906,7 @@ sync_arr_cell_can_wake_up(
+ 		lock = cell->latch.lock;
+ 
+                 /* lock_word > 0 means no writer or reserved writer */
++		os_rmb;
+ 		if (lock->lock_word > 0) {
+ 
+ 			return(true);
+Index: mysql-5.7.4-m14/storage/innobase/sync/sync0rw.cc
+===================================================================
+--- mysql-5.7.4-m14.orig/storage/innobase/sync/sync0rw.cc
++++ mysql-5.7.4-m14/storage/innobase/sync/sync0rw.cc
+@@ -379,15 +379,20 @@ rw_lock_s_lock_spin(
+ lock_loop:
+ 
+ 	/* Spin waiting for the writer field to become free */
++	os_rmb;
+ 	while (i < srv_n_spin_wait_rounds && lock->lock_word <= 0) {
+ 		if (srv_spin_wait_delay) {
+ 			ut_delay(ut_rnd_interval(0, srv_spin_wait_delay));
+ 		}
+-
++#ifdef HAVE_MEMORY_BARRIER
++		i += 2;
++		os_rmb;
++#else
+ 		i++;
++#endif /* HAVE_MEMORY_BARRIER */
+ 	}
+ 
+-	if (i == srv_n_spin_wait_rounds) {
++	if (i >= srv_n_spin_wait_rounds) {
+ 		os_thread_yield();
+ 	}
+ 
+@@ -470,6 +475,7 @@ rw_lock_x_lock_wait_func(
+ 	ulint		i = 0;
+ 	sync_array_t*	sync_arr;
+ 
++	os_rmb;
+ 	ut_ad(lock->lock_word <= threshold);
+ 
+ 	while (lock->lock_word < threshold) {
+@@ -478,7 +484,12 @@ rw_lock_x_lock_wait_func(
+ 		}
+ 
+ 		if (i < srv_n_spin_wait_rounds) {
++#ifdef HAVE_MEMORY_BARRIER
++			i += 2;
++			os_rmb;
++#else
+ 			i++;
++#endif /* HAVE_MEMORY_BARRIER */
+ 			continue;
+ 		}
+ 
+@@ -729,6 +740,7 @@ lock_loop:
+ 		}
+ 
+ 		/* Spin waiting for the lock_word to become free */
++		os_rmb;
+ 		while (i < srv_n_spin_wait_rounds
+ 		       && lock->lock_word <= X_LOCK_HALF_DECR) {
+ 
+@@ -736,11 +748,15 @@ lock_loop:
+ 				ut_delay(ut_rnd_interval(
+ 						0, srv_spin_wait_delay));
+ 			}
+-
++#ifdef HAVE_MEMORY_BARRIER
++			i += 2;
++			os_rmb;
++#else
+ 			i++;
++#endif /* HAVE_MEMORY_BARRIER */
+ 		}
+ 
+-		if (i == srv_n_spin_wait_rounds) {
++		if (i >= srv_n_spin_wait_rounds) {
+ 			os_thread_yield();
+ 		} else {
+ 			goto lock_loop;
+@@ -831,6 +847,7 @@ lock_loop:
+ 		}
+ 
+ 		/* Spin waiting for the lock_word to become free */
++		os_rmb;
+ 		while (i < srv_n_spin_wait_rounds
+ 		       && lock->lock_word <= X_LOCK_HALF_DECR) {
+ 
+@@ -838,11 +855,15 @@ lock_loop:
+ 				ut_delay(ut_rnd_interval(
+ 						0, srv_spin_wait_delay));
+ 			}
+-
++#ifdef HAVE_MEMORY_BARRIER
++			i += 2;
++			os_rmb;
++#else
+ 			i++;
++#endif /* HAVE_MEMORY_BARRIER */
+ 		}
+ 
+-		if (i == srv_n_spin_wait_rounds) {
++		if (i >= srv_n_spin_wait_rounds) {
+ 			os_thread_yield();
+ 		} else {
+ 			goto lock_loop;
+
