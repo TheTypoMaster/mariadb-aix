@@ -439,7 +439,7 @@ NdbOperation::getValue_impl(const NdbColumnImpl* tAttrInfo, char* aValue)
 /*****************************************************************************
  * int setValue(AttrInfo* tAttrInfo, char* aValue, Uint32 len)
  *
- * Return Value:  Return 0 : SetValue was succesful.
+ * Return Value:  Return 0 : SetValue was successful.
  *                Return -1: In all other case.   
  * Parameters:    tAttrInfo : Attribute object where the attribute 
  *                            info exists.
@@ -660,7 +660,7 @@ NdbOperation::getBlobHandle(NdbTransaction* aCon, const NdbColumnImpl* tAttrInfo
 /****************************************************************************
  * int insertATTRINFO( Uint32 aData );
  *
- * Return Value:   Return 0 : insertATTRINFO was succesful.
+ * Return Value:   Return 0 : insertATTRINFO was successful.
  *                 Return -1: In all other case.   
  * Parameters:     aData: the data to insert into ATTRINFO.
  * Remark:         Puts the the data into either TCKEYREQ signal or 
@@ -714,7 +714,7 @@ insertATTRINFO_error1:
 /*****************************************************************************
  * int insertATTRINFOloop(Uint32* aDataPtr, Uint32 aLength );
  *
- * Return Value:  Return 0 : insertATTRINFO was succesful.
+ * Return Value:  Return 0 : insertATTRINFO was successful.
  *                Return -1: In all other case.   
  * Parameters:    aDataPtr: Pointer to the data to insert into ATTRINFO.
  *                aLength: Length of data to be copied

@@ -316,7 +316,7 @@ NdbOperation::equal_impl(const NdbColumnImpl* tAttrInfo,
  * int insertKEYINFO(const char* aValue, aStartPosition, 
  *                   anAttrSizeInWords, Uint32 anAttrBitsInLastWord);
  *
- * Return Value:   Return 0 : insertKEYINFO was succesful.
+ * Return Value:   Return 0 : insertKEYINFO was successful.
  *                 Return -1: In all other case.   
  * Parameters:     aValue: the data to insert into KEYINFO.
  *    		   aStartPosition : Start position for Tuplekey in 

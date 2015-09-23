@@ -161,7 +161,7 @@ void BuildIndxReq::setColumnOrder(Uint32* indexBuf, Uint32 indexLen,
  * BuildIndxConf
  *
  * This signal is sent back to DICT from TRIX
- * as confirmation of succesfull index build
+ * as confirmation of successfull index build
  * (BuildIndxReq).
  */
 class BuildIndxConf {

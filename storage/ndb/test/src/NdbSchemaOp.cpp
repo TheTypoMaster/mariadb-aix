@@ -177,7 +177,7 @@ NdbSchemaOp::release(){
 /******************************************************************************
 int sendRec()
 
-Return Value:   Return 0 : send was succesful.
+Return Value:   Return 0 : send was successful.
                 Return -1: In all other case.   
 Parameters:
 Remark:         Send and receive signals for schema transaction based on state

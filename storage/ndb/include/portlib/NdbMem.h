@@ -41,7 +41,7 @@ void NdbMem_Destroy(void);
  * NdbMem_Allocate
  * Allocate size of memory
  * @parameter size - size in bytes of memory to allocate
- * @returns - pointer to memory if succesful otherwise NULL
+ * @returns - pointer to memory if successful otherwise NULL
  */
 void* NdbMem_Allocate(size_t size);
 
@@ -50,7 +50,7 @@ void* NdbMem_Allocate(size_t size);
  * Allocate size of memory
  * @parameter size - size in bytes of memory to allocate
  * @paramter alignment - byte boundary to align the data at
- * @returns - pointer to memory if succesful otherwise NULL
+ * @returns - pointer to memory if successful otherwise NULL
  */
 void* NdbMem_AllocateAlign(size_t size, size_t alignment);
 

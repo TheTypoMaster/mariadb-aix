@@ -1088,7 +1088,7 @@ NdbTransaction::releaseScanOperation(NdbIndexScanOperation** listhead,
 NdbOperation* getNdbOperation(const char* aTableName);
 
 Return Value    Return a pointer to a NdbOperation object if getNdbOperation 
-                was succesful.
+                was successful.
                 Return NULL : In all other case. 	
 Parameters:     aTableName : Name of the database table. 	
 Remark:         Get an operation from NdbOperation idlelist and get the 
@@ -1119,7 +1119,7 @@ NdbTransaction::getNdbOperation(const char* aTableName)
 NdbOperation* getNdbOperation(int aTableId);
 
 Return Value    Return a pointer to a NdbOperation object if getNdbOperation 
-                was succesful.
+                was successful.
                 Return NULL: In all other case. 	
 Parameters:     tableId : Id of the database table beeing deleted.
 Remark:         Get an operation from NdbOperation object idlelist and 
@@ -1187,7 +1187,7 @@ NdbOperation* NdbTransaction::getNdbOperation(const NdbDictionary::Table * table
 /*****************************************************************************
 NdbScanOperation* getNdbScanOperation(const char* aTableName);
 
-Return Value    Return a pointer to a NdbScanOperation object if getNdbScanOperation was succesful.
+Return Value    Return a pointer to a NdbScanOperation object if getNdbScanOperation was successful.
                 Return NULL : In all other case. 	
 Parameters:     aTableName : Name of the database table. 	
 Remark:         Get an operation from NdbScanOperation idlelist and get the NdbTransaction object 
@@ -1214,7 +1214,7 @@ NdbTransaction::getNdbScanOperation(const char* aTableName)
 /*****************************************************************************
 NdbScanOperation* getNdbIndexScanOperation(const char* anIndexName, const char* aTableName);
 
-Return Value    Return a pointer to a NdbIndexScanOperation object if getNdbIndexScanOperation was succesful.
+Return Value    Return a pointer to a NdbIndexScanOperation object if getNdbIndexScanOperation was successful.
                 Return NULL : In all other case. 	
 Parameters:     anIndexName : Name of the index to use. 	
                 aTableName : Name of the database table. 	
@@ -1300,7 +1300,7 @@ NdbTransaction::getNdbIndexScanOperation(const NdbDictionary::Index * index,
 /*****************************************************************************
 NdbScanOperation* getNdbScanOperation(int aTableId);
 
-Return Value    Return a pointer to a NdbScanOperation object if getNdbScanOperation was succesful.
+Return Value    Return a pointer to a NdbScanOperation object if getNdbScanOperation was successful.
                 Return NULL: In all other case. 	
 Parameters:     tableId : Id of the database table beeing deleted.
 Remark:         Get an operation from NdbScanOperation object idlelist and get the NdbTransaction 
@@ -1371,7 +1371,7 @@ NdbTransaction::getNdbScanOperation(const NdbDictionary::Table * table)
 NdbIndexOperation* getNdbIndexOperation(const char* anIndexName,
 					const char* aTableName);
 
-Return Value    Return a pointer to a NdbOperation object if getNdbIndexOperation was succesful.
+Return Value    Return a pointer to a NdbOperation object if getNdbIndexOperation was successful.
                 Return NULL : In all other case. 	
 Parameters:     aTableName : Name of the database table. 	
 Remark:         Get an operation from NdbIndexOperation idlelist and get the NdbTransaction object 
@@ -1424,7 +1424,7 @@ NdbTransaction::getNdbIndexOperation(const char* anIndexName,
 /*****************************************************************************
 NdbIndexOperation* getNdbIndexOperation(int anIndexId, int aTableId);
 
-Return Value    Return a pointer to a NdbIndexOperation object if getNdbIndexOperation was succesful.
+Return Value    Return a pointer to a NdbIndexOperation object if getNdbIndexOperation was successful.
                 Return NULL: In all other case. 	
 Parameters:     tableId : Id of the database table beeing deleted.
 Remark:         Get an operation from NdbIndexOperation object idlelist and get the NdbTransaction 
@@ -1722,7 +1722,7 @@ NdbTransaction::receiveTCROLLBACKREF(NdbApiSignal* aSignal)
 /*****************************************************************************
 int receiveTCROLLBACKREP( NdbApiSignal* aSignal)
 
-Return Value:   Return 0 : send was succesful.
+Return Value:   Return 0 : send was successful.
                 Return -1: In all other case.   
 Parameters:     aSignal: the signal object that contains the 
                 TCROLLBACKREP signal from TC.

@@ -4869,7 +4869,7 @@ max_part_bit(key_part_map bits)
   structure key_field, the key number and key part for this key use. 
   The built object is added to the dynamic array keyuse_array.
 
-  @retval         0             the built object is succesfully added 
+  @retval         0             the built object is successfully added 
   @retval         1             otherwise
 */
 

@@ -6196,7 +6196,7 @@ fts_rename_aux_tables_to_hex_format_low(
 		ut_a(trx->state == TRX_STATE_NOT_STARTED);
 		bool not_rename = false;
 
-		/* Try to revert those succesful rename operations
+		/* Try to revert those successful rename operations
 		in order to revert the ibd file rename. */
 		for (ulint i = 0; i <= count; ++i) {
 			dict_table_t*		table;

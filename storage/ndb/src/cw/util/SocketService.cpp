@@ -47,8 +47,8 @@ SocketService::runSession(NDB_SOCKET_TYPE socket, SocketService & ss){
    * add a proprty object to which the parser will put its result.
    */
   
-  return 1 ; //succesful
-  //return 0; //unsuccesful
+  return 1 ; //successful
+  //return 0; //unsuccessful
 
 }
 

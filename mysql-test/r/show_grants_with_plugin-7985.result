@@ -16,7 +16,7 @@ Grants for u1@%
 GRANT USAGE ON *.* TO 'u1'@'%'
 GRANT SELECT ON `mysql`.* TO 'u1'@'%'
 #
-# Test to see if connecting with no password is succesful.
+# Test to see if connecting with no password is successful.
 #
 connect  con1, localhost, u1,,;
 show grants;
@@ -45,7 +45,7 @@ select user, host, password, plugin, authentication_string from mysql.user where
 user	host	password	plugin	authentication_string
 u1	%		mysql_native_password	*7AFEFD08B6B720E781FB000CAA418F54FA662626
 #
-# Test to see if connecting with password is succesful.
+# Test to see if connecting with password is successful.
 #
 connect  con1, localhost, u1,'SOMETHING',;
 show grants;

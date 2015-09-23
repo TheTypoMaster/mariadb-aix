@@ -2048,7 +2048,7 @@ int sp_cache_routine(THD *thd, Sroutine_hash_entry *rt,
   @param[out] sp    Pointer to sp_head object for routine, NULL if routine was
                     not found.
 
-  @retval 0      Either routine is found and was succesfully loaded into cache
+  @retval 0      Either routine is found and was successfully loaded into cache
                  or it does not exist.
   @retval non-0  Error while loading routine from mysql,proc table.
 */

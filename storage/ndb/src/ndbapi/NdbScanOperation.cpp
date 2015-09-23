@@ -770,7 +770,7 @@ void NdbScanOperation::release()
 int prepareSendScan(Uint32 aTC_ConnectPtr,
                     Uint64 aTransactionId)
 
-Return Value:   Return 0 : preparation of send was succesful.
+Return Value:   Return 0 : preparation of send was successful.
                 Return -1: In all other case.   
 Parameters:     aTC_ConnectPtr: the Connect pointer to TC.
 		aTransactionId:	the Transaction identity of the transaction.
@@ -845,7 +845,7 @@ int NdbScanOperation::prepareSendScan(Uint32 aTC_ConnectPtr,
 /*****************************************************************************
 int doSend()
 
-Return Value:   Return >0 : send was succesful, returns number of signals sent
+Return Value:   Return >0 : send was successful, returns number of signals sent
                 Return -1: In all other case.   
 Parameters:     aProcessorId: Receiving processor node
 Remark:         Sends the ATTRINFO signal(s)

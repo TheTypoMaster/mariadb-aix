@@ -943,7 +943,7 @@ Parameters:     aTableName (IN) : The table name.
                 step       (IN) : Specifies the step between the 
                                   autoincrement values.
                 start      (IN) : Start value for first value
-Returns:        0 if succesful, -1 if error encountered
+Returns:        0 if successful, -1 if error encountered
 Remark:		Returns a new autoincrement value to the application.
                 The autoincrement values can be increased by steps
                 (default 1) and a number of values can be prefetched
@@ -1080,7 +1080,7 @@ int readAutoIncrementValue( const char* aTableName,
 
 Parameters:     aTableName (IN) : The table name.
                 autoValue  (OUT) : The current autoincrement value
-Returns:        0 if succesful, -1 if error encountered
+Returns:        0 if successful, -1 if error encountered
 Remark:         Returns the current autoincrement value to the application.
 ****************************************************************************/
 int
@@ -1174,7 +1174,7 @@ int setAutoIncrementValue( const char* aTableName,
 Parameters:     aTableName (IN) : The table name.
                 autoValue  (IN) : The new autoincrement value
                 modify     (IN) : Modify existing value (not initialization)
-Returns:        0 if succesful, -1 if error encountered
+Returns:        0 if successful, -1 if error encountered
 Remark:         Sets a new autoincrement value for the application.
 ****************************************************************************/
 int
